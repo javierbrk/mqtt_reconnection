@@ -56,6 +56,8 @@
 #include <ti/drivers/Timer.h>
 
 #include <ti/net/mqtt/mqttclient.h>
+#include "mqtt_client_app.h"
+
 
 #include "network_if.h"
 #include "uart_term.h"
@@ -83,8 +85,8 @@ extern int32_t ti_net_SlNet_initConfig();
 #define MQTT_WILL_QOS               MQTT_QOS_2
 #define MQTT_WILL_RETAIN            false
 
-#define MQTT_CLIENT_PASSWORD        NULL
-#define MQTT_CLIENT_USERNAME        NULL
+#define MQTT_CLIENT_PASSWORD        "doorlock"
+#define MQTT_CLIENT_USERNAME        "jjorgesuper"
 #define MQTT_CLIENT_KEEPALIVE       0
 #define MQTT_CLIENT_CLEAN_CONNECT   true
 #define MQTT_CLIENT_MQTT_V3_1       true
@@ -92,7 +94,7 @@ extern int32_t ti_net_SlNet_initConfig();
 
 #ifndef MQTT_SECURE_CLIENT
 #define MQTT_CONNECTION_FLAGS           MQTTCLIENT_NETCONN_URL
-#define MQTT_CONNECTION_ADDRESS         "mqtt.eclipse.org"
+#define MQTT_CONNECTION_ADDRESS         "lockdoor.eastus.cloudapp.azure.com"
 #define MQTT_CONNECTION_PORT_NUMBER     1883
 #else
 #define MQTT_CONNECTION_FLAGS           MQTTCLIENT_NETCONN_IP4 | MQTTCLIENT_NETCONN_SEC
@@ -111,18 +113,7 @@ int longPress = 0;
 /* the ClientID parameter.                                                   */
 char ClientId[13] = {'\0'};
 
-enum{
-    APP_MQTT_PUBLISH,
-    APP_MQTT_CON_TOGGLE,
-    APP_MQTT_DEINIT,
-    APP_BTN_HANDLER
-};
 
-struct msgQueue
-{
-    int   event;
-    char* payload;
-};
 
 MQTT_IF_InitParams_t mqttInitParams =
 {
@@ -404,7 +395,7 @@ void MQTT_EventCallback(int32_t event){
 
             LOG_INFO("MQTT_EVENT_SERVER_DISCONNECT\r\n");
 
-            queueElement.event = APP_MQTT_CON_TOGGLE;
+            queueElement.event = APP_MQTT_CONN;
             int res = mq_send(appQueue, (const char*)&queueElement, sizeof(struct msgQueue), 0);
             if(res < 0){
                 LOG_ERROR("msg queue send error %d", res);
@@ -688,6 +679,16 @@ MQTT_DEMO:
                 if((int)mqttClientHandle >= 0){
                     connected = 1;
                 }
+            }
+        }
+        else if(queueElement.event == APP_MQTT_CONN){
+
+            LOG_TRACE("APP_MQTT_CONNNNNNNNNN estado = %d\r\n", connected);
+
+            mqttClientHandle = MQTT_IF_Connect(mqttClientParams, mqttConnParams, MQTT_EventCallback);
+            if((int)mqttClientHandle >= 0){
+               connected = 1;
+
             }
         }
         else if(queueElement.event == APP_MQTT_DEINIT){

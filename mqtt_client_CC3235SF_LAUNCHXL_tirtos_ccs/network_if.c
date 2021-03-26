@@ -58,6 +58,8 @@
 #include "network_if.h"
 #include "uart_term.h"
 
+#include "mqtt_client_app.h"
+
 //*****************************************************************************
 //                          LOCAL DEFINES
 //*****************************************************************************
@@ -141,6 +143,14 @@ void SimpleLinkWlanEventHandler(SlWlanEvent_t *pSlWlanEvent)
             g_ucConnectionBSSID[2],
             g_ucConnectionBSSID[3], g_ucConnectionBSSID[4],
             g_ucConnectionBSSID[5]);
+
+            struct msgQueue queueElement;
+
+            queueElement.event = APP_MQTT_CONN;
+            int res = mq_send(appQueue, (const char*)&queueElement, sizeof(struct msgQueue), 0);
+            if(res < 0){
+                UART_PRINT("msg queue send error %d", res);
+            }
         break;
 
     case SL_WLAN_EVENT_DISCONNECT:
